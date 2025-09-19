@@ -7,19 +7,22 @@ import mongoose from "mongoose";
 
 export default async function PostDetailPage({ params }) {
   try {
-    if (!params.id || !mongoose.Types.ObjectId.isValid(params.id)) {
-      return <p>Invalid post ID</p>;
+    const postId = params.id;
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      return <p className="text-center text-red-500">Invalid post ID</p>;
     }
 
     await connectToDB();
 
-    const postDoc = await Post.findById(params.id)
+    const postDoc = await Post.findById(postId)
       .populate({ path: "author", select: "name email" })
       .lean();
 
-    if (!postDoc) return <p>Post not found</p>;
+    if (!postDoc) {
+      return <p className="text-center text-red-500">Post not found</p>;
+    }
 
-    // ✅ Convert to plain JSON-safe object
+    // Convert Mongoose fields to JSON-safe plain object
     const post = {
       ...postDoc,
       _id: postDoc._id.toString(),
@@ -30,6 +33,7 @@ export default async function PostDetailPage({ params }) {
       updatedAt: postDoc.updatedAt?.toISOString() || null,
     };
 
+    // Decode JWT from cookies
     let currentUserId = null;
     try {
       const token = cookies().get("token")?.value;
@@ -43,7 +47,11 @@ export default async function PostDetailPage({ params }) {
 
     return <PostDetailClient post={post} currentUserId={currentUserId} />;
   } catch (err) {
-    console.error("PostDetailPage error:", err.message);
-    return <p className="text-center text-red-500">⚠️ Failed to load post</p>;
+    console.error("PostDetailPage error:", err);
+    return (
+      <p className="text-center text-red-500">
+        ⚠️ Failed to load post. Please check your server logs.
+      </p>
+    );
   }
 }
