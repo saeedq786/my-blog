@@ -9,7 +9,7 @@ export default function EditPostPage({ params }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Fetch post safely
+  // ✅ Fetch post safely on mount
   useEffect(() => {
     async function fetchPost() {
       try {
@@ -25,14 +25,14 @@ export default function EditPostPage({ params }) {
           data = {};
         }
 
-        if (!res.ok) {
+        if (!res.ok || !data.post) {
           setError(data.message || "Post not found");
           return;
         }
 
         setForm({
-          title: data.post?.title || "",
-          content: data.post?.content || "",
+          title: data.post.title || "",
+          content: data.post.content || "",
         });
       } catch {
         setError("Failed to fetch post");
@@ -42,7 +42,7 @@ export default function EditPostPage({ params }) {
     fetchPost();
   }, [params.id]);
 
-  // Handle update safely
+  // ✅ Handle post update
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -58,12 +58,12 @@ export default function EditPostPage({ params }) {
 
       let data = {};
       try {
-        data = await res.json(); // safe parsing
+        data = await res.json();
       } catch {
         data = {};
       }
 
-      if (res.ok) {
+      if (res.ok && data.post) {
         router.push(`/posts/${params.id}`);
         router.refresh();
       } else {
@@ -79,7 +79,6 @@ export default function EditPostPage({ params }) {
   return (
     <div className="w-full max-w-lg mx-auto p-6 bg-black shadow rounded">
       <h1 className="text-2xl font-bold text-center mb-4">Edit Post</h1>
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -89,7 +88,6 @@ export default function EditPostPage({ params }) {
           placeholder="Title"
           required
         />
-
         <textarea
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -97,7 +95,6 @@ export default function EditPostPage({ params }) {
           placeholder="Content"
           required
         />
-
         <button
           type="submit"
           disabled={loading}
@@ -105,7 +102,6 @@ export default function EditPostPage({ params }) {
         >
           {loading ? "Saving..." : "Save Changes"}
         </button>
-
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </form>
     </div>
