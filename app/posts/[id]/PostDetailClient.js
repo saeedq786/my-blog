@@ -17,14 +17,15 @@ export default function PostDetailClient({ post, currentUserId }) {
       setLoading(true);
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
-        credentials: "include", // ✅ send JWT cookie
+        credentials: "include", // ✅ send JWT cookie for auth
       });
 
-      let data;
+      // Safely parse JSON to avoid undefined.parse errors
+      let data = {};
       try {
         data = await res.json();
-      } catch {
-        data = {};
+      } catch (err) {
+        // ignore parse errors if response body is empty
       }
 
       if (!res.ok) {
@@ -34,7 +35,7 @@ export default function PostDetailClient({ post, currentUserId }) {
       router.push("/");
       router.refresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -43,6 +44,12 @@ export default function PostDetailClient({ post, currentUserId }) {
   if (!post) {
     return <p className="text-center text-red-500">⚠️ Post not found</p>;
   }
+
+  // ✅ Compare user IDs safely as strings
+  const isAuthor =
+    currentUserId && post.author?._id
+      ? currentUserId === post.author._id.toString()
+      : false;
 
   return (
     <article className="bg-gray-800 rounded-xl shadow-lg p-8">
@@ -57,26 +64,24 @@ export default function PostDetailClient({ post, currentUserId }) {
         <p>{post.content}</p>
       </div>
 
-      {/* Show buttons only if current user is the author */}
-      {currentUserId &&
-        post.author?._id &&
-        currentUserId === post.author._id.toString() && (
-          <div className="flex space-x-4">
-            <Link
-              href={`/posts/${post._id}/edit`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition"
-            >
-              ✏️ Edit
-            </Link>
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg cursor-pointer hover:bg-red-700 transition disabled:opacity-50"
-            >
-              {loading ? "Deleting..." : "🗑️ Delete"}
-            </button>
-          </div>
-        )}
+      {/* Show Edit/Delete buttons only if current user is the author */}
+      {isAuthor && (
+        <div className="flex space-x-4">
+          <Link
+            href={`/posts/${post._id}/edit`}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition"
+          >
+            ✏️ Edit
+          </Link>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg cursor-pointer hover:bg-red-700 transition disabled:opacity-50"
+          >
+            {loading ? "Deleting..." : "🗑️ Delete"}
+          </button>
+        </div>
+      )}
     </article>
   );
 }
