@@ -1,32 +1,27 @@
 import PostDetailClient from "./PostDetailClient";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-
-async function getPost(id) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts/${id}`, {
-    cache: "no-store",
-     credentials: "include",
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
+import { connectToDB } from "@/lib/db";
+import Post from "@/models/post";
 
 export default async function PostDetailPage({ params }) {
-  const data = await getPost(params.id);
-  if (!data || !data.post) return <p>Post not found</p>;
+  await connectToDB();
 
-  // ✅ Current logged-in user ka ID decode karna
+  // Fetch post directly from DB (safer than calling API from server component)
+  const post = await Post.findById(params.id).populate("author", "name email").lean();
+  if (!post) return <p>Post not found</p>;
+
+  // Get current user ID from cookie
   let currentUserId = null;
   try {
-    const token = cookies().get("token")?.value;
+    const token = cookies().get("token")?.value; // safe access
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       currentUserId = decoded.id;
     }
   } catch (err) {
-    currentUserId = null;
+    currentUserId = null; // token invalid or missing
   }
 
-  // 🟢 yahan sirf data.post bhejna hai
-  return <PostDetailClient post={data.post} currentUserId={currentUserId} />;
+  return <PostDetailClient post={post} currentUserId={currentUserId} />;
 }

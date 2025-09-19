@@ -15,12 +15,19 @@ export default function PostDetailClient({ post, currentUserId }) {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/posts/${post._id}`, { method: "DELETE" });
+      const res = await fetch(`/api/posts/${post._id}`, {
+        method: "DELETE",
+        credentials: "include", // ✅ send JWT cookie
+      });
 
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = {};
+      }
 
-      
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.message || "Failed to delete post");
       }
 
@@ -43,33 +50,33 @@ export default function PostDetailClient({ post, currentUserId }) {
       <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
 
       {/* Author */}
-      <p className="text-white mb-6">
-        By {post.author?.name || "Unknown"}
-      </p>
+      <p className="text-white mb-6">By {post.author?.name || "Unknown"}</p>
 
       {/* Content */}
       <div className="prose max-w-none mb-8">
         <p>{post.content}</p>
       </div>
 
-      {/* 🟢 Show buttons only if current user is the author */}
-      {currentUserId && currentUserId === post.author?._id && (
-        <div className="flex space-x-4">
-          <Link
-            href={`/posts/${post._id}/edit`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition"
-          >
-            ✏️ Edit
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg cursor-pointer hover:bg-red-700 transition disabled:opacity-50"
-          >
-            {loading ? "Deleting..." : "🗑️ Delete"}
-          </button>
-        </div>
-      )}
+      {/* Show buttons only if current user is the author */}
+      {currentUserId &&
+        post.author?._id &&
+        currentUserId === post.author._id.toString() && (
+          <div className="flex space-x-4">
+            <Link
+              href={`/posts/${post._id}/edit`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition"
+            >
+              ✏️ Edit
+            </Link>
+            <button
+              onClick={handleDelete}
+              disabled={loading}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg cursor-pointer hover:bg-red-700 transition disabled:opacity-50"
+            >
+              {loading ? "Deleting..." : "🗑️ Delete"}
+            </button>
+          </div>
+        )}
     </article>
   );
 }
