@@ -9,20 +9,26 @@ export default async function PostDetailPage({ params }) {
   try {
     const postId = params.id;
     if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
-      return <p className="text-center text-red-500">Invalid post ID</p>;
+      console.error("Invalid post ID:", postId);
+      return <p>Invalid post ID</p>;
     }
 
-    await connectToDB();
+    // Attempt DB connection
+    await connectToDB().catch((err) => {
+      console.error("MongoDB connection failed:", err);
+      throw err;
+    });
 
     const postDoc = await Post.findById(postId)
       .populate({ path: "author", select: "name email" })
       .lean();
 
     if (!postDoc) {
-      return <p className="text-center text-red-500">Post not found</p>;
+      console.error("Post not found:", postId);
+      return <p>Post not found</p>;
     }
 
-    // Convert Mongoose fields to JSON-safe plain object
+    // Convert to plain object
     const post = {
       ...postDoc,
       _id: postDoc._id.toString(),
@@ -33,7 +39,6 @@ export default async function PostDetailPage({ params }) {
       updatedAt: postDoc.updatedAt?.toISOString() || null,
     };
 
-    // Decode JWT from cookies
     let currentUserId = null;
     try {
       const token = cookies().get("token")?.value;
@@ -41,7 +46,8 @@ export default async function PostDetailPage({ params }) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         currentUserId = decoded.id;
       }
-    } catch {
+    } catch (err) {
+      console.warn("JWT verify failed:", err.message);
       currentUserId = null;
     }
 
