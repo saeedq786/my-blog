@@ -15,12 +15,10 @@ export default function PostDetailClient({ post, currentUserId }) {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/posts/${post._id}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/posts/${post._id}`, { method: "DELETE" });
 
-        credentials: "include",
-      });
 
+      
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to delete post");
@@ -45,7 +43,9 @@ export default function PostDetailClient({ post, currentUserId }) {
       <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
 
       {/* Author */}
-      <p className="text-white mb-6">By {post.author?.name || "Unknown"}</p>
+      <p className="text-white mb-6">
+        By {post.author?.name || "Unknown"}
+      </p>
 
       {/* Content */}
       <div className="prose max-w-none mb-8">
