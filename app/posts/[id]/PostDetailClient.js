@@ -8,26 +8,36 @@ export default function PostDetailClient({ post, currentUserId }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // ✅ Delete Post Function
+  // ✅ Delete Post Function (safe & production-ready)
   async function handleDelete() {
     if (!post?._id) return alert("Invalid post.");
     if (!confirm("Are you sure you want to delete this post?")) return;
 
+    setLoading(true);
+    let data = {};
+
     try {
-      setLoading(true);
-      const res = await fetch(`/api/posts/${post._id}`, { method: "DELETE" });
+      const res = await fetch(`/api/posts/${post._id}`, {
+        method: "DELETE",
+        credentials: "include", // ✅ ensure JWT cookie is sent
+      });
 
+      // safe parsing
+      try {
+        data = await res.json();
+      } catch (err) {
+        data = {};
+      }
 
-      
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.message || "Failed to delete post");
       }
 
+      // redirect after delete
       router.push("/");
       router.refresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -37,23 +47,21 @@ export default function PostDetailClient({ post, currentUserId }) {
     return <p className="text-center text-red-500">⚠️ Post not found</p>;
   }
 
+  // ✅ Compare user IDs as string to prevent errors
+  const isAuthor =
+    currentUserId && post.author?._id
+      ? currentUserId === post.author._id.toString()
+      : false;
+
   return (
     <article className="bg-gray-800 rounded-xl shadow-lg p-8">
-      {/* Title */}
       <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-
-      {/* Author */}
-      <p className="text-white mb-6">
-        By {post.author?.name || "Unknown"}
-      </p>
-
-      {/* Content */}
+      <p className="text-white mb-6">By {post.author?.name || "Unknown"}</p>
       <div className="prose max-w-none mb-8">
         <p>{post.content}</p>
       </div>
 
-      {/* 🟢 Show buttons only if current user is the author */}
-      {currentUserId && currentUserId === post.author?._id && (
+      {isAuthor && (
         <div className="flex space-x-4">
           <Link
             href={`/posts/${post._id}/edit`}

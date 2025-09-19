@@ -9,12 +9,12 @@ export default function EditPostPage({ params }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ✅ Fetch initial post safely
+  // Fetch post safely
   useEffect(() => {
     async function fetchPost() {
       try {
         const res = await fetch(`/api/posts/${params.id}`, {
-          credentials: "include", // send JWT cookie
+          credentials: "include",
         });
 
         let data = {};
@@ -41,7 +41,7 @@ export default function EditPostPage({ params }) {
     fetchPost();
   }, [params.id]);
 
-  // ✅ Handle form submit safely
+  // Handle update
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -52,7 +52,7 @@ export default function EditPostPage({ params }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
-        credentials: "include", // send JWT cookie
+        credentials: "include",
       });
 
       let data = {};
