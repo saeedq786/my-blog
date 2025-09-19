@@ -18,6 +18,7 @@ export default function EditPostPage({ params }) {
       }
       setForm({ title: data.post?.title || "", content: data.post?.content || "" });
     }
+    credentials: "include",
     fetchPost();
   }, [params.id]);
 
@@ -29,6 +30,7 @@ export default function EditPostPage({ params }) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
+        credentials: "include",
     });
 
     if (res.ok) {

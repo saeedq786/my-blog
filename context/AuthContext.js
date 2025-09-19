@@ -1,64 +1,41 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import jwt from "jsonwebtoken";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchMe() {
-      try {
-        const res = await fetch("/api/auth/me");
-        const data = await res.json();
-        setUser(data.user);
-      } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
+    // 🟢 Check token from cookies on mount
+    const cookies = document.cookie.split("; ").find(row => row.startsWith("token="));
+    if (!cookies) return;
+
+    const token = cookies.split("=")[1];
+    try {
+      const decoded = jwt.decode(token); // decode without verifying
+      if (decoded) {
+        setUser({ _id: decoded.id, email: decoded.email });
       }
+    } catch (err) {
+      console.log("Invalid token", err);
+      setUser(null);
     }
-    fetchMe();
   }, []);
 
-  async function registerUser({ name, email, password }) {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
-    const data = await res.json();
-    if (res.ok) setUser(data.user);
-    return { ok: res.ok, data };
-  }
-
-  async function loginUser({ email, password }) {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (res.ok) setUser(data.user);
-    return { ok: res.ok, data };
-  }
-
-  async function logoutUser() {
-    await fetch("/api/auth/logout", { method: "POST" });
+  const login = (userData) => setUser(userData);
+  const logout = () => {
+    document.cookie = "token=; max-age=0; path=/";
     setUser(null);
-  }
+  };
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, registerUser, loginUser, logoutUser }}
-    >
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export const useAuth = () => useContext(AuthContext);
