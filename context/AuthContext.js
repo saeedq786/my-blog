@@ -11,7 +11,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function fetchMe() {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", {
+          credentials: "include", // ✅ send cookies
+        });
         const data = await res.json();
         setUser(data.user);
       } catch {
@@ -27,6 +29,7 @@ export function AuthProvider({ children }) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include", // ✅ send cookies
       body: JSON.stringify({ name, email, password }),
     });
     const data = await res.json();
@@ -38,6 +41,7 @@ export function AuthProvider({ children }) {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include", // ✅ send cookies
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -46,7 +50,10 @@ export function AuthProvider({ children }) {
   }
 
   async function logoutUser() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include", // ✅ send cookies
+    });
     setUser(null);
   }
 
