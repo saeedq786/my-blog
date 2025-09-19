@@ -17,6 +17,7 @@ export default function EditPostPage({ params }) {
           credentials: "include",
         });
 
+        // Safe JSON parsing
         let data = {};
         try {
           data = await res.json();
@@ -41,7 +42,7 @@ export default function EditPostPage({ params }) {
     fetchPost();
   }, [params.id]);
 
-  // Handle update
+  // Handle update safely
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
@@ -57,7 +58,7 @@ export default function EditPostPage({ params }) {
 
       let data = {};
       try {
-        data = await res.json();
+        data = await res.json(); // safe parsing
       } catch {
         data = {};
       }
