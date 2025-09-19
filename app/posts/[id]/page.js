@@ -1,63 +1,32 @@
 import PostDetailClient from "./PostDetailClient";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { connectToDB } from "@/lib/db";
-import Post from "@/models/post";
-import mongoose from "mongoose";
+
+async function getPost(id) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts/${id}`, {
+    cache: "no-store",
+     credentials: "include",
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
 
 export default async function PostDetailPage({ params }) {
+  const data = await getPost(params.id);
+  if (!data || !data.post) return <p>Post not found</p>;
+
+  // ✅ Current logged-in user ka ID decode karna
+  let currentUserId = null;
   try {
-    const postId = params.id;
-    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
-      console.error("Invalid post ID:", postId);
-      return <p>Invalid post ID</p>;
+    const token = cookies().get("token")?.value;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      currentUserId = decoded.id;
     }
-
-    // Attempt DB connection
-    await connectToDB().catch((err) => {
-      console.error("MongoDB connection failed:", err);
-      throw err;
-    });
-
-    const postDoc = await Post.findById(postId)
-      .populate({ path: "author", select: "name email" })
-      .lean();
-
-    if (!postDoc) {
-      console.error("Post not found:", postId);
-      return <p>Post not found</p>;
-    }
-
-    // Convert to plain object
-    const post = {
-      ...postDoc,
-      _id: postDoc._id.toString(),
-      author: postDoc.author
-        ? { ...postDoc.author, _id: postDoc.author._id.toString() }
-        : null,
-      createdAt: postDoc.createdAt?.toISOString() || null,
-      updatedAt: postDoc.updatedAt?.toISOString() || null,
-    };
-
-    let currentUserId = null;
-    try {
-      const token = cookies().get("token")?.value;
-      if (token) {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        currentUserId = decoded.id;
-      }
-    } catch (err) {
-      console.warn("JWT verify failed:", err.message);
-      currentUserId = null;
-    }
-
-    return <PostDetailClient post={post} currentUserId={currentUserId} />;
   } catch (err) {
-    console.error("PostDetailPage error:", err);
-    return (
-      <p className="text-center text-red-500">
-        ⚠️ Failed to load post. Please check your server logs.
-      </p>
-    );
+    currentUserId = null;
   }
+
+  // 🟢 yahan sirf data.post bhejna hai
+  return <PostDetailClient post={data.post} currentUserId={currentUserId} />;
 }
