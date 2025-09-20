@@ -24,28 +24,39 @@ export async function GET(_, { params }) {
 export async function PUT(req, { params }) {
   try {
     await connectToDB();
+
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const body = await req.json();
+
     const post = await Post.findById(params.id);
-
-    if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    if (post.author.toString() !== decoded.id) {
+    if (!post) return NextResponse.json({ message: "Post not found" }, { status: 404 });
+    if (post.author.toString() !== decoded.id)
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
 
+    // Safe update
     post.title = body.title || post.title;
-    post.content = body.content || post.content;
+
+    // Ensure content is always string
+    post.content =
+      typeof body.content === "string"
+        ? body.content
+        : typeof post.content === "string"
+        ? post.content
+        : "";
+
     post.updatedAt = Date.now();
     await post.save();
 
-    return NextResponse.json({ post }); // 👈 keep consistent
+    return NextResponse.json({ post });
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
+
 
 // 🟢 Delete post
 export async function DELETE(req, { params }) {
