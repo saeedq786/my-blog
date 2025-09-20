@@ -9,8 +9,8 @@ export async function GET() {
     await connectToDB();
     const posts = await Post.find().populate("author", "name email");
     return NextResponse.json({ posts });
-  } catch (error) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
 
@@ -19,25 +19,25 @@ export async function POST(req) {
     await connectToDB();
 
     const token = getTokenFromReq(req);
-    if (!token) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return NextResponse.json({ message: "Invalid Token" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Safely parse JSON body
-    let body = {};
+    let body;
     try {
       body = await req.json();
-    } catch (err) {
+    } catch {
       return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
     }
 
     const { title, content } = body;
-
-    if (!title || typeof title !== "string" || !content || typeof content !== "string") {
+    if (!title || !content)
       return NextResponse.json({ message: "Title and content are required" }, { status: 400 });
-    }
 
     const newPost = await Post.create({
       title,
