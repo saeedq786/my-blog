@@ -10,14 +10,24 @@ export default function EditPostPage({ params }) {
 
   useEffect(() => {
     async function fetchPost() {
-      const res = await fetch(`/api/posts/${params.id}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setError("Post not found");
-        return;
+      try {
+        const res = await fetch(`/api/posts/${params.id}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.message || "Post not found");
+          return;
+        }
+
+        setForm({
+          title: data.post?.title || "",
+          content: typeof data.post?.content === "string" ? data.post.content : "",
+        });
+      } catch (err) {
+        setError("Failed to fetch post");
       }
-      setForm({ title: data.post?.title || "", content: data.post?.content || "" });
     }
+
     fetchPost();
   }, [params.id]);
 
@@ -25,23 +35,31 @@ export default function EditPostPage({ params }) {
     e.preventDefault();
     setError(null);
 
-    const res = await fetch(`/api/posts/${params.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch(`/api/posts/${params.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          content: form.content || "", // always send a string
+        }),
+      });
 
-    if (res.ok) {
-      router.push(`/posts/${params.id}`);
-      router.refresh();
-    } else {
       const data = await res.json();
-      setError(data.message);
+
+      if (res.ok) {
+        router.push(`/posts/${params.id}`);
+        router.refresh();
+      } else {
+        setError(data.message || "Failed to update post");
+      }
+    } catch (err) {
+      setError("Something went wrong");
     }
   }
 
   return (
-    <div className="w-full mx-auto  p-6 bg-black shadow rounded">
+    <div className="w-full mx-auto p-6 bg-black shadow rounded">
       <h1 className="text-2xl font-bold text-center mb-4">Edit Post</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -49,11 +67,13 @@ export default function EditPostPage({ params }) {
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           className="w-full border p-2 rounded"
+          placeholder="Title"
         />
         <textarea
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
           className="w-full border p-2 rounded min-h-[120px]"
+          placeholder="Content"
         />
         <button className="w-full bg-blue-600 text-white p-2 cursor-pointer rounded hover:bg-blue-700">
           Save Changes
