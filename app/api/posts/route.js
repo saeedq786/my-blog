@@ -23,7 +23,7 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    const token = getTokenFromReq(req);
+    const token = getTokenFromReq();
     if (!token) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
@@ -35,8 +35,7 @@ export async function POST(req) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 
-    // ✅ Safe JSON parse
-    let body;
+    let body = {};
     try {
       body = await req.json();
     } catch {

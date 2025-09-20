@@ -7,10 +7,10 @@ import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
 // 🟢 Get single post
-export async function GET(req) {
+export async function GET(req, { params }) {
   try {
     await connectToDB();
-    const id = req.url.split("/").pop();
+    const { id } = params;
 
     const post = await Post.findById(id).populate("author", "name email");
     if (!post) {
@@ -25,12 +25,12 @@ export async function GET(req) {
 }
 
 // 🟢 Update post
-export async function PUT(req) {
+export async function PUT(req, { params }) {
   try {
     await connectToDB();
-    const id = req.url.split("/").pop();
+    const { id } = params;
 
-    const token = getTokenFromReq(req);
+    const token = getTokenFromReq();
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     let decoded;
@@ -40,7 +40,7 @@ export async function PUT(req) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 
-    let body;
+    let body = {};
     try {
       body = await req.json();
     } catch {
@@ -69,12 +69,12 @@ export async function PUT(req) {
 }
 
 // 🟢 Delete post
-export async function DELETE(req) {
+export async function DELETE(req, { params }) {
   try {
     await connectToDB();
-    const id = req.url.split("/").pop();
+    const { id } = params;
 
-    const token = getTokenFromReq(req);
+    const token = getTokenFromReq();
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     let decoded;
