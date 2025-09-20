@@ -1,13 +1,12 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
 import Post from "@/models/post";
 import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
-export const runtime = "nodejs";
-
-
-// 🟢 GET all posts
+// 🟢 Get all posts
 export async function GET() {
   try {
     await connectToDB();
@@ -15,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ posts });
   } catch (error) {
     console.error("GET /api/posts error:", error);
-    return NextResponse.json({ message: error.message || "Server error" }, { status: 500 });
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 
@@ -24,7 +23,6 @@ export async function POST(req) {
   try {
     await connectToDB();
 
-    // ✅ Extract token
     const token = getTokenFromReq(req);
     if (!token) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -37,17 +35,15 @@ export async function POST(req) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 
-    // ✅ Safe body parsing
-    let body = {};
+    // ✅ Safe JSON parse
+    let body;
     try {
       body = await req.json();
     } catch {
       return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { title, content } = body;
-
-    // ✅ Validation
+    const { title, content } = body || {};
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json(
         { message: "Title and content are required" },
@@ -55,7 +51,6 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Create post
     const newPost = await Post.create({
       title: title.trim(),
       content: content.trim(),
@@ -65,6 +60,6 @@ export async function POST(req) {
     return NextResponse.json({ post: newPost }, { status: 201 });
   } catch (err) {
     console.error("POST /api/posts error:", err);
-    return NextResponse.json({ message: err.message || "Server error" }, { status: 500 });
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }

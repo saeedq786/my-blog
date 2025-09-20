@@ -1,76 +1,92 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
 import Post from "@/models/post";
 import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
-export const runtime = "nodejs";
-
-
-// 🟢 GET single post
-export async function GET(_, { params }) {
+// 🟢 Get single post
+export async function GET(req) {
   try {
     await connectToDB();
-    const post = await Post.findById(params.id).populate("author", "name email");
+    const id = req.url.split("/").pop();
 
+    const post = await Post.findById(id).populate("author", "name email");
     if (!post) {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
     return NextResponse.json({ post });
   } catch (err) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
+    console.error("GET /api/posts/[id] error:", err);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 
 // 🟢 Update post
-// 🟢 Update post
-export async function PUT(req, { params }) {
+export async function PUT(req) {
   try {
     await connectToDB();
+    const id = req.url.split("/").pop();
 
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    }
 
-    // Safely parse JSON body
-    const body = await req.json().catch(() => ({}));
-    const { title, content } = body;
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
+    }
 
-    const post = await Post.findById(params.id);
+    const { title, content } = body || {};
+
+    const post = await Post.findById(id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Only update if valid strings are provided
-    if (title && typeof title === "string") post.title = title;
-    if (content && typeof content === "string") post.content = content;
+    if (title?.trim()) post.title = title.trim();
+    if (content?.trim()) post.content = content.trim();
 
-    post.updatedAt = Date.now();
     await post.save();
 
     return NextResponse.json({ post });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ message: err.message }, { status: 500 });
+    console.error("PUT /api/posts/[id] error:", err);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 
-
 // 🟢 Delete post
-export async function DELETE(req, { params }) {
+export async function DELETE(req) {
   try {
     await connectToDB();
+    const id = req.url.split("/").pop();
+
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const post = await Post.findById(params.id);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+    }
 
+    const post = await Post.findById(id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
     if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
@@ -78,6 +94,7 @@ export async function DELETE(req, { params }) {
     await post.deleteOne();
     return NextResponse.json({ success: true });
   } catch (err) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
+    console.error("DELETE /api/posts/[id] error:", err);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
