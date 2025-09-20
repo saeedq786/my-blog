@@ -11,7 +11,7 @@ export default function EditPostPage({ params }) {
   useEffect(() => {
     async function fetchPost() {
       try {
-        const res = await fetch(`/api/posts/${params.id}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts/${params.id}`);
         const data = await res.json();
 
         if (!res.ok) {

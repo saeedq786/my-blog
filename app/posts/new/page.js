@@ -28,7 +28,7 @@ async function handleSubmit(e) {
     content: form.content?.trim() || "",
   };
 
-  const res = await fetch("/api/posts", {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload), // ✅ always a valid JSON string

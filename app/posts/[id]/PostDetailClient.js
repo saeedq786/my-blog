@@ -17,7 +17,7 @@ export default function PostDetailClient({ post, currentUserId }) {
     let data = {};
 
     try {
-      const res = await fetch(`/api/posts/${post._id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts/${post._id}`, {
         method: "DELETE",
         credentials: "include", // ✅ ensure JWT cookie is sent
       });
