@@ -2,31 +2,38 @@ import PostDetailClient from "./PostDetailClient";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-async function getPost(id) {
+async function getPost(id, token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`; // send JWT to API
+
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts/${id}`, {
-    cache: "no-store",
-     credentials: "include",
+    headers,
+    cache: "no-store", // always fetch fresh
   });
+
   if (!res.ok) return null;
   return res.json();
 }
 
 export default async function PostDetailPage({ params }) {
-  const data = await getPost(params.id);
-  if (!data || !data.post) return <p>Post not found</p>;
-
-  // ✅ Current logged-in user ka ID decode karna
+  // ✅ Get JWT token from cookies
   let currentUserId = null;
+  let token = null;
   try {
-    const token = cookies().get("token")?.value;
+    token = cookies().get("token")?.value;
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       currentUserId = decoded.id;
     }
-  } catch (err) {
+  } catch {
     currentUserId = null;
+    token = null;
   }
 
-  // 🟢 yahan sirf data.post bhejna hai
+  // ✅ Fetch post data from API
+  const data = await getPost(params.id, token);
+
+  if (!data || !data.post) return <p>Post not found</p>;
+
   return <PostDetailClient post={data.post} currentUserId={currentUserId} />;
 }

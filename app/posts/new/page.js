@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function NewPostPage() {
-  const { user } = useAuth();
+  const { user } = useAuth(); // user object should include JWT token
   const router = useRouter();
   const [form, setForm] = useState({ title: "", content: "" });
   const [error, setError] = useState(null);
@@ -21,15 +21,33 @@ export default function NewPostPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (res.ok) router.push("/");
-    else setError(data.message);
+
+    // Frontend validation
+    if (!form.title.trim() || !form.content.trim()) {
+      setError("Title and Content cannot be empty");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`, // ✅ add token here
+        },
+        body: JSON.stringify(form), // ✅ stringify body
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push("/"); // Redirect to home after successful post
+      } else {
+        setError(data.message || "Something went wrong");
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    }
   }
 
   return (

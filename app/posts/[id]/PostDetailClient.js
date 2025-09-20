@@ -3,39 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext"; // assumes you have auth context
 
 export default function PostDetailClient({ post, currentUserId }) {
   const router = useRouter();
+  const { user } = useAuth(); // JWT token from context
   const [loading, setLoading] = useState(false);
 
-  // ✅ Delete Post Function (safe & production-ready)
+  // ✅ Delete Post Function
   async function handleDelete() {
     if (!post?._id) return alert("Invalid post.");
     if (!confirm("Are you sure you want to delete this post?")) return;
 
+    if (!user?.token) return alert("You must be logged in to delete.");
+
     setLoading(true);
-    let data = {};
 
     try {
       const res = await fetch(`/api/posts/${post._id}`, {
         method: "DELETE",
-        credentials: "include", // ✅ ensure JWT cookie is sent
+        headers: {
+          Authorization: `Bearer ${user.token}`, // ✅ send token in header
+        },
       });
 
-      // safe parsing
-      try {
-        data = await res.json();
-      } catch (err) {
-        data = {};
-      }
+      const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to delete post");
-      }
+      if (!res.ok) throw new Error(data.message || "Failed to delete post");
 
       // redirect after delete
       router.push("/");
-      router.refresh();
     } catch (err) {
       alert(err.message || "Something went wrong");
     } finally {
@@ -47,7 +44,7 @@ export default function PostDetailClient({ post, currentUserId }) {
     return <p className="text-center text-red-500">⚠️ Post not found</p>;
   }
 
-  // ✅ Compare user IDs as string to prevent errors
+  // ✅ Compare user IDs as string
   const isAuthor =
     currentUserId && post.author?._id
       ? currentUserId === post.author._id.toString()
