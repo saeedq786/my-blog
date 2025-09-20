@@ -4,18 +4,16 @@ import Post from "@/models/post";
 import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
-// 🟢 Get all posts
 export async function GET() {
   try {
     await connectToDB();
     const posts = await Post.find().populate("author", "name email");
-    return NextResponse.json({ posts }); // 👈 wrap in object
+    return NextResponse.json({ posts });
   } catch (error) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
-// 🟢 Create new post
 export async function POST(req) {
   try {
     await connectToDB();
@@ -26,19 +24,21 @@ export async function POST(req) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { title, content } = await req.json();
 
-    if (!title || !content) {
-      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const { title, content } = body;
+
+    if (!title || typeof title !== "string" || !content || typeof content !== "string") {
+      return NextResponse.json({ message: "Title and content are required" }, { status: 400 });
     }
 
     const newPost = await Post.create({
       title,
       content,
-      author: decoded.id, // 👈 logged in user
+      author: decoded.id,
     });
 
-    return NextResponse.json({ post: newPost }, { status: 201 }); // 👈 wrap in object
+    return NextResponse.json({ post: newPost }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }

@@ -14,7 +14,7 @@ export async function GET(_, { params }) {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ post }); // 👈 wrap inside { post }
+    return NextResponse.json({ post });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
@@ -28,20 +28,26 @@ export async function PUT(req, { params }) {
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const body = await req.json();
-    const post = await Post.findById(params.id);
 
+    // Safely parse JSON body
+    const body = await req.json().catch(() => ({}));
+    const { title, content } = body;
+
+    const post = await Post.findById(params.id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
+
     if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    post.title = body.title || post.title;
-    post.content = body.content || post.content;
+    // Only update if valid strings are provided
+    if (title && typeof title === "string") post.title = title;
+    if (content && typeof content === "string") post.content = content;
+
     post.updatedAt = Date.now();
     await post.save();
 
-    return NextResponse.json({ post }); // 👈 keep consistent
+    return NextResponse.json({ post });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
@@ -63,7 +69,7 @@ export async function DELETE(req, { params }) {
     }
 
     await post.deleteOne();
-    return NextResponse.json({ success: true }); // 👈 consistent key
+    return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
