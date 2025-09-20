@@ -4,6 +4,9 @@ import Post from "@/models/post";
 import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
+
 // 🟢 GET single post
 export async function GET(_, { params }) {
   try {
