@@ -18,19 +18,38 @@ export default function NewPostPage() {
     );
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError(null);
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-      credentials: "include",
-    });
-    const data = await res.json();
-    if (res.ok) router.push("/");
-    else setError(data.message);
+async function handleSubmit(e) {
+  e.preventDefault();
+  setError(null);
+
+  // ensure form data is not empty
+  const payload = {
+    title: form.title?.trim() || "",
+    content: form.content?.trim() || "",
+  };
+
+  const res = await fetch("/api/posts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload), // ✅ always a valid JSON string
+    credentials: "include",
+  });
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    data = { message: "Invalid response from server" };
   }
+
+  if (res.ok) {
+    router.push("/");
+    router.refresh(); // ✅ make sure homepage updates
+  } else {
+    setError(data.message || "Something went wrong");
+  }
+}
+
 
   return (
     <div className="flex min-h-screen items-center justify-center">
