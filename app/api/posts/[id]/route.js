@@ -21,6 +21,7 @@ export async function GET(_, { params }) {
 }
 
 // 🟢 Update post
+// 🟢 Update post
 export async function PUT(req, { params }) {
   try {
     await connectToDB();
@@ -29,7 +30,6 @@ export async function PUT(req, { params }) {
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-<<<<<<< HEAD
 
     // Safely parse JSON body
     const body = await req.json().catch(() => ({}));
@@ -39,31 +39,12 @@ export async function PUT(req, { params }) {
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     if (post.author.toString() !== decoded.id) {
-=======
-    const body = await req.json();
-
-    const post = await Post.findById(params.id);
-    if (!post) return NextResponse.json({ message: "Post not found" }, { status: 404 });
-    if (post.author.toString() !== decoded.id)
->>>>>>> f51d31ddb7b15a177faeaa04451eec6bbf04f32a
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
 
-<<<<<<< HEAD
     // Only update if valid strings are provided
     if (title && typeof title === "string") post.title = title;
     if (content && typeof content === "string") post.content = content;
-=======
-    // Safe update
-    post.title = body.title || post.title;
-
-    // Ensure content is always string
-    post.content =
-      typeof body.content === "string"
-        ? body.content
-        : typeof post.content === "string"
-        ? post.content
-        : "";
->>>>>>> f51d31ddb7b15a177faeaa04451eec6bbf04f32a
 
     post.updatedAt = Date.now();
     await post.save();
