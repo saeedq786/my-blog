@@ -1,30 +1,21 @@
 import PostCard from "./components/PostCard";
 
 async function getPosts() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts`, {
-      cache: "no-store", // always fetch fresh
-    });
-
-    if (!res.ok) {
-      console.error("Failed to fetch posts:", res.status);
-      return [];
-    }
-
-    const data = await res.json();
-    return Array.isArray(data.posts) ? data.posts : [];
-  } catch (err) {
-    console.error("Error fetching posts:", err);
-    return [];
-  }
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts`, {
+    cache: "no-store",
+  });
+  const data = await res.json();
+  return data.posts || [];
 }
 
 export default async function HomePage() {
   const posts = await getPosts();
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-4xl font-bold text-center mb-10">Latest Blog Posts</h1>
+    <main className="max-w-6xl mx-auto px-6 py-1">
+      <h1 className="text-4xl font-bold text-center mb-10">
+        Latest Blog Posts
+      </h1>
 
       {posts.length === 0 ? (
         <p className="text-center text-gray-500">No posts yet.</p>

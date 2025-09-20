@@ -4,16 +4,15 @@ import Post from "@/models/post";
 import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
-// Helper to get ID from URL
-const getIdFromReq = (req) => new URL(req.url).pathname.split("/").pop();
-
-export async function GET(req) {
+// 🟢 GET single post
+export async function GET(_, { params }) {
   try {
     await connectToDB();
-    const id = getIdFromReq(req);
+    const post = await Post.findById(params.id).populate("author", "name email");
 
-    const post = await Post.findById(id).populate("author", "name email");
-    if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (!post) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ post });
   } catch (err) {
@@ -21,64 +20,57 @@ export async function GET(req) {
   }
 }
 
-export async function PUT(req) {
+// 🟢 Update post
+// 🟢 Update post
+export async function PUT(req, { params }) {
   try {
     await connectToDB();
-    const id = getIdFromReq(req);
 
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
-      return NextResponse.json({ message: "Invalid Token" }, { status: 401 });
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
-    }
+    // Safely parse JSON body
+    const body = await req.json().catch(() => ({}));
+    const { title, content } = body;
 
-    const post = await Post.findById(id);
+    const post = await Post.findById(params.id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
-    if (post.author.toString() !== decoded.id)
+    if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
 
-    if (body.title) post.title = body.title;
-    if (body.content) post.content = body.content;
+    // Only update if valid strings are provided
+    if (title && typeof title === "string") post.title = title;
+    if (content && typeof content === "string") post.content = content;
+
     post.updatedAt = Date.now();
-
     await post.save();
+
     return NextResponse.json({ post });
   } catch (err) {
+    console.error(err);
     return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
 
-export async function DELETE(req) {
+
+// 🟢 Delete post
+export async function DELETE(req, { params }) {
   try {
     await connectToDB();
-    const id = getIdFromReq(req);
-
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
-      return NextResponse.json({ message: "Invalid Token" }, { status: 401 });
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const post = await Post.findById(params.id);
 
-    const post = await Post.findById(id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    if (post.author.toString() !== decoded.id)
+    if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
 
     await post.deleteOne();
     return NextResponse.json({ success: true });

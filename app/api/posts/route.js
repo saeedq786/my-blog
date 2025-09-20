@@ -9,8 +9,8 @@ export async function GET() {
     await connectToDB();
     const posts = await Post.find().populate("author", "name email");
     return NextResponse.json({ posts });
-  } catch (err) {
-    return NextResponse.json({ message: err.message }, { status: 500 });
+  } catch (error) {
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }
 
@@ -19,25 +19,18 @@ export async function POST(req) {
     await connectToDB();
 
     const token = getTokenFromReq(req);
-    if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
-    let decoded;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
-    } catch {
-      return NextResponse.json({ message: "Invalid Token" }, { status: 401 });
+    if (!token) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
-    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    const body = await req.json().catch(() => ({}));
     const { title, content } = body;
-    if (!title || !content)
+
+    if (!title || typeof title !== "string" || !content || typeof content !== "string") {
       return NextResponse.json({ message: "Title and content are required" }, { status: 400 });
+    }
 
     const newPost = await Post.create({
       title,

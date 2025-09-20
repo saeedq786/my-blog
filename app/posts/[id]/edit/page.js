@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 
 export default function EditPostPage({ params }) {
   const router = useRouter();
-  const { user } = useAuth(); // JWT token from auth context
   const [form, setForm] = useState({ title: "", content: "" });
   const [error, setError] = useState(null);
 
@@ -37,27 +35,13 @@ export default function EditPostPage({ params }) {
     e.preventDefault();
     setError(null);
 
-    if (!user?.token) {
-      setError("You must be logged in to edit the post.");
-      return;
-    }
-
-    // Frontend validation
-    if (!form.title.trim() || !form.content.trim()) {
-      setError("Title and content cannot be empty");
-      return;
-    }
-
     try {
       const res = await fetch(`/api/posts/${params.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`, // ✅ add JWT token
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: form.title,
-          content: form.content,
+          ...form,
+          content: form.content || "", // always send a string
         }),
       });
 
@@ -65,11 +49,12 @@ export default function EditPostPage({ params }) {
 
       if (res.ok) {
         router.push(`/posts/${params.id}`);
+        router.refresh();
       } else {
         setError(data.message || "Failed to update post");
       }
     } catch (err) {
-      setError(err.message || "Something went wrong");
+      setError("Something went wrong");
     }
   }
 
