@@ -5,10 +5,13 @@ import jwt from "jsonwebtoken";
 import { getTokenFromReq } from "@/lib/auth";
 
 // 🟢 GET single post
-export async function GET(_, { params }) {
+export async function GET(req) {
   try {
     await connectToDB();
-    const post = await Post.findById(params.id).populate("author", "name email");
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop(); // get :id from path
+
+    const post = await Post.findById(id).populate("author", "name email");
 
     if (!post) {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
@@ -21,28 +24,33 @@ export async function GET(_, { params }) {
 }
 
 // 🟢 Update post
-// 🟢 Update post
-export async function PUT(req, { params }) {
+export async function PUT(req) {
   try {
     await connectToDB();
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop(); // get :id from path
 
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Safely parse JSON body
-    const body = await req.json().catch(() => ({}));
+    let body = {};
+    try {
+      body = await req.json();
+    } catch (err) {
+      return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
+    }
+
     const { title, content } = body;
 
-    const post = await Post.findById(params.id);
+    const post = await Post.findById(id);
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
 
     if (post.author.toString() !== decoded.id) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    // Only update if valid strings are provided
     if (title && typeof title === "string") post.title = title;
     if (content && typeof content === "string") post.content = content;
 
@@ -56,16 +64,18 @@ export async function PUT(req, { params }) {
   }
 }
 
-
 // 🟢 Delete post
-export async function DELETE(req, { params }) {
+export async function DELETE(req) {
   try {
     await connectToDB();
+    const url = new URL(req.url);
+    const id = url.pathname.split("/").pop(); // get :id from path
+
     const token = getTokenFromReq(req);
     if (!token) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const post = await Post.findById(params.id);
+    const post = await Post.findById(id);
 
     if (!post) return NextResponse.json({ message: "Not found" }, { status: 404 });
     if (post.author.toString() !== decoded.id) {

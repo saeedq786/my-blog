@@ -25,7 +25,14 @@ export async function POST(req) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const body = await req.json().catch(() => ({}));
+    // Safely parse JSON body
+    let body = {};
+    try {
+      body = await req.json();
+    } catch (err) {
+      return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
+    }
+
     const { title, content } = body;
 
     if (!title || typeof title !== "string" || !content || typeof content !== "string") {
