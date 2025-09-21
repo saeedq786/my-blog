@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/login", "/register", "/"];
+const PUBLIC_PATHS = ["/login", "/register", "/", "/api/posts"];
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
-  // public pages allowed
-  if (PUBLIC_PATHS.includes(pathname)) {
+  // Public pages allowed
+  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // check auth token
+  // Check token
   const token = req.cookies.get("token")?.value;
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
@@ -25,6 +25,12 @@ export async function middleware(req) {
   }
 }
 
+// ✅ Sirf dashboard, profile aur post create/edit secure
 export const config = {
-  matcher: ["/posts/:path*"], // protect posts routes
+  matcher: [
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/posts/new",
+    "/posts/edit/:path*",
+  ],
 };
