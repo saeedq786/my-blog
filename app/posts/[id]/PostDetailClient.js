@@ -55,9 +55,9 @@ export default function PostDetailClient({ post, currentUserId }) {
 
   return (
     <article className="bg-gray-800 rounded-xl shadow-lg p-8">
-      <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-      <p className="text-white mb-6">By {post.author?.name || "Unknown"}</p>
-      <div className="prose max-w-none mb-8">
+      <h1 className="text-4xl font-bold mb-4 text-center">{post.title}</h1>
+      <p className="text-white mb-6 text-center">By {post.author?.name || "Unknown"}</p>
+      <div className="prose max-w-none mb-8 ">
         <p>{post.content}</p>
       </div>
 

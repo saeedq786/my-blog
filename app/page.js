@@ -1,15 +1,20 @@
+// app/page.js
 import PostCard from "./components/PostCard";
+import { connectToDB } from "@/lib/db";
+import Post from "@/models/post";
+import "@/models/user"; // ensure User schema load ho jaye
 
-async function getPosts() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/posts`, {
-    cache: "no-store",
-  });
-  const data = await res.json();
-  return data.posts || [];
-}
+export const dynamic = "force-dynamic"; // hamesha fresh data fetch
 
 export default async function HomePage() {
-  const posts = await getPosts();
+  // 🟢 DB connect
+  await connectToDB();
+
+  // 🟢 direct database se posts fetch with author
+  const posts = await Post.find()
+    .sort({ createdAt: -1 })
+    .populate("author", "name email") // author ka name aur email fetch
+    .lean();
 
   return (
     <main className="max-w-6xl mx-auto px-6 py-1">
@@ -22,7 +27,7 @@ export default async function HomePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard key={post._id} post={JSON.parse(JSON.stringify(post))} />
           ))}
         </div>
       )}
